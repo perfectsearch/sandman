@@ -1,0 +1,5 @@
+// a comment
+
+pushok: foo.py
+pushok seconds: bar.py
+officialok: nose baz.py

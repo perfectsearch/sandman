@@ -1,0 +1,2 @@
+ASSUME pushok 1s FOR: [a-z0-9].*\.py EXCEPT
+pushok 10s: system_test.py

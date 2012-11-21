@@ -1,0 +1,6 @@
+total 16
+-rw-rw-r--. 1 oathizhi oathizhi   61 Jan  4 13:40 a.txt
+-rw-rw-r--. 1 oathizhi oathizhi   84 Jan  4 13:40 b.txt
+drwxrwxr-x. 2 oathizhi oathizhi 4096 Jan  4 14:01 [0m[01;34munvisitedSubdir[0m
+drwxrwxr-x. 2 oathizhi oathizhi 4096 Jan  4 14:01 [01;34mvisitedSubdir[0m
+[m

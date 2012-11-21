@@ -1,0 +1,2 @@
+total 0
+-rw-rw-r--. 1 oathizhi oathizhi 0 Jan  4 13:40 a.txt

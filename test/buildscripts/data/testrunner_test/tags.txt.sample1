@@ -1,0 +1,7 @@
+// a comment
+
+x x: foo.py
+x,y: bar.py
+x, y    z: nose baz.py
+# redundant add
+x: foo.py

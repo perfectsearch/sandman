@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE project [
+  <!ENTITY python.targets SYSTEM "../../buildscripts/ant/python-targets.include">
+]>
+
+<project name="sadm" default="integrate">
+	<property name="code.root" location="../.." />
+	<property name="component" value="sadm" />
+    &python.targets;
+	<target name="clean" depends="standard-clean" />
+	<target name="build" depends="standard-clean,standard-build" />
+	<target name="test" depends="build,standard-test" />
+	<target name="run" depends="standard-run">
+		<copy file="${code.root}/buildscripts/buildinfo.py" tofile="${code.root}/${component}/sadm_buildname.py" preservelastmodified="true"/>
+		<copy todir="${run.root}" preservelastmodified="true" includeEmptyDirs="false">
+			<fileset dir="${code.root}/${component}">
+				<include name="*.bat" />
+				<include name="sadm_buildname.py" />
+			</fileset>
+		</copy>
+	</target>
+	<target name="pkg" />
+</project>

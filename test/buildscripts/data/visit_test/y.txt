@@ -1,0 +1,17 @@
+total 72
+-rw-rw-r--. 1 oathizhi oathizhi 6261 Nov 30 15:16 ArchiveTest.py
+-rw-rw-r--. 1 oathizhi oathizhi 1391 Nov 30 15:51 BuildInfoTest.py
+-rw-rw-r--. 1 oathizhi oathizhi  582 Nov  3 13:23 build.xml
+-rw-rw-r--. 1 oathizhi oathizhi 6870 Dec 30 05:04 CodescanTest.py
+-rw-rw-r--. 1 oathizhi oathizhi 2519 Dec 30 05:04 CodeStatTest.py
+-rw-rw-r--. 1 oathizhi oathizhi 2605 Dec  6 15:57 DisabledUnitTestTest.py
+-rw-rw-r--. 1 oathizhi oathizhi 8105 Dec 29 13:49 FindOrphansTest.py
+-rw-rw-r--. 1 oathizhi oathizhi 2003 Jan  4 11:21 FixCopyrightTest.py
+-rw-rw-r--. 1 oathizhi oathizhi 1828 Jan  3 17:44 ImportTest.py
+-rw-rw-r--. 1 oathizhi oathizhi 2795 Jan  3 11:51 MetacodeTest.py
+drwxrwxr-x. 6 oathizhi oathizhi 4096 Jan  4 13:13 [0m[01;34m.svn[0m
+-rw-rw-r--. 1 oathizhi oathizhi 1115 Dec  6 15:57 _testcase.py
+-rw-rw-r--. 1 oathizhi oathizhi  449 Nov 30 15:16 _testpaths.py
+drwxrwxr-x. 3 oathizhi oathizhi 4096 Jan  4 13:40 [01;34mVisitTest[0m
+-rw-rw-r--. 1 oathizhi oathizhi 3594 Jan  3 17:44 XmailTest.py
+[m

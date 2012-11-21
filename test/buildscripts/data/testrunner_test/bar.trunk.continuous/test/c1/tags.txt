@@ -1,0 +1,4 @@
+// a comment
+assume system 1000s interactive for: system.*\.py except
+assume pushok for: .*\.py except
+officialok 10s: x.py

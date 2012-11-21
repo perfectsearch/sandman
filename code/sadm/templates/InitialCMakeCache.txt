@@ -1,0 +1,9 @@
+set(CTEST_BUILD_NAME "unknown rev ^[bitness]-bit on ^[buildenv]" CACHE String "describe build for cdash" FORCE)
+set(BUILD_TESTING 1 CACHE BOOL "Temp variable used for building" FORCE)
+set(BUILD_LEGACY 0 CACHE BOOL "Temp variable used for building" FORCE)
+set(RUN_FUNCTIONAL_TESTS 0 CACHE String "Should we run functional tests?" FORCE)
+set(SITE "^[site]" CACHE String "Name of machine running the build" FORCE)
+set(CMAKE_GENERATOR:INTERNAL=^[generator])
+set(CMAKE_BUILD_TYPE ^[default_build_type] CACHE String "Should build be Release, Debug, RelWithDebInfo, or RelMinSize?")
+set(BUILD_PACKAGES ^[buildPackages] CACHE BOOL "Should build RPM packages in all target?" FORCE)
+

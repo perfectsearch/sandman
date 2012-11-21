@@ -1,0 +1,1 @@
+ADD_TEST(ant-driven-tests python "^[code_root]/buildscripts/antmake.py" test)

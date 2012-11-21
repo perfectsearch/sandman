@@ -1,0 +1,107 @@
+cmake_minimum_required( VERSION 2.8 )
+
+set(CTEST_SITE "^[site]")
+set(CTEST_PROJECT_NAME "^[prj]")
+set(DASHBOARD "^[dashboard]")
+set(SHOULD_PUBLISH ^[should_publish])
+set(ARCHIVE_PHASE_SUFFIX "")
+set(SADM_LOCATION "^[sadmfolder]")
+if (SHOULD_ARCHIVE EQUAL 1)
+    set(ARCHIVE_PHASE_SUFFIX ", archive")
+endif()
+set(CTEST_SOURCE_DIRECTORY "^[code_root]")
+set(CTEST_BINARY_DIRECTORY "^[built_root]")
+find_program(CTEST_CMAKE_COMMAND NAMES cmake)
+find_program(CTEST_CTEST_COMMAND NAMES ctest)
+find_program(CTEST_SVN_COMMAND NAMES svn)
+find_program(CTEST_PYTHON_COMMAND NAMES python)
+
+set(LAST_PASS "${CTEST_BINARY_DIRECTORY}/LastPass.txt")
+set(LAST_FAIL "${CTEST_BINARY_DIRECTORY}/LastFail.txt")
+set(LAST_FAIL2 "${CTEST_BINARY_DIRECTORY}/LastFail2orMore.txt")
+
+# Build some commands that ctest needs.
+find_program(CTEST_SVN_COMMAND NAMES bzr)
+find_program(CTEST_PYTHON_COMMAND NAMES python)
+set(CTEST_CHECKOUT_COMMAND "${CTEST_PYTHON_COMMAND} \"${CTEST_SOURCE_DIRECTORY}/buildscripts/fake_svn.py\" co \"^[code_root]\"" )
+set(CTEST_UPDATE_COMMAND "${CTEST_PYTHON_COMMAND} \"${CTEST_SOURCE_DIRECTORY}/buildscripts/fake_svn.py\"")
+
+# Tell CTest to read its config from the files in the binary directory.
+ctest_read_custom_files("${CTEST_BINARY_DIRECTORY}")
+
+# Misc CTest settings
+set(CTEST_TIMEOUT "^[overall_timeout]")
+set(CTEST_TEST_TIMEOUT "^[test_timeout]")
+set($ENV{LC_MESSAGES} "en_EN")
+
+# Before we start the rest of the process, we have to find out what
+# rev will be reflected in this build.
+set(svnrev "1")
+set(FAIL_COUNT 0)
+
+# Don't repeatedly build, test, and submit on the same svn revision.
+# Once we've either passed once, or failed twice on a particular revision,
+# wait for svn to change. To manage this logic, write semaphore files into
+# build root:
+#     LastPass.txt        -- last run passed, and contains svn rev # for last build
+#     LastFail.txt        -- last run failed, and contains svn rev # for last build
+#     LastFail2orMore.txt -- at least last two runs have failed at the svn rev # in the file
+# Exactly zero or one of these files will exist at any given time.
+set(SHORT_CIRCUIT 0)
+# All short-circuiting logic is suspended if we can't get svn rev reliably...
+if (NOT ("${svnrev}" STREQUAL "0"))
+    set(LASTREV_FILE ${LAST_PASS})
+    if(NOT (EXISTS "${LASTREV_FILE}"))
+        set(LASTREV_FILE ${LAST_FAIL})
+        if(NOT (EXISTS "${LASTREV_FILE}"))
+            set(LASTREV_FILE ${LAST_FAIL2})
+            if(NOT (EXISTS "${LASTREV_FILE}"))
+                set(LASTREV_FILE "none")
+            endif()
+        endif()
+    endif()
+    if (NOT (${LASTREV_FILE} STREQUAL "none"))
+        #message(STATUS "*** LASTREV_FILE = ${LASTREV_FILE}")
+        file(READ "${LASTREV_FILE}" lastrev)
+        string(REGEX REPLACE ".*Revision: +([0-9]+).*" "\\1" svnrev "${info}")
+        string(REGEX REPLACE "[\t\r\n ]+" "" lastrev "${lastrev}")
+        if("${lastrev}" STREQUAL "${svnrev}")
+            if("${LASTREV_FILE}" STREQUAL "${LAST_PASS}")
+                set(SHORT_CIRCUIT 1)
+                message(STATUS "Short-circuiting ctest script because we've already passed on svn revision ${svnrev}.")
+            else()
+                if("${LASTREV_FILE}" STREQUAL "${LAST_FAIL}")
+                    set(FAIL_COUNT 1)
+                    message(STATUS "Second attempt on svn revision ${svnrev}.")
+                    file(REMOVE "${LASTREV_FILE}")
+                else()
+                    set(SHORT_CIRCUIT 1)
+                    message(STATUS "Short-circuiting ctest script because we've already failed twice on svn revision ${svnrev}.")
+                endif()
+            endif()
+        else()
+            file(REMOVE "${LASTREV_FILE}")
+        endif()
+    else()
+        #message(STATUS "*** NO LASTREV_FILE")
+    endif()
+endif()
+
+macro(run_hook position)
+    set(hook "${position}${phase}")
+    set(hookres 0)
+    if (EXISTS "${hook}.cmake")
+        message(STATUS "Running ${hook}.cmake.")
+        include("${hook}.cmake")
+    else()
+        if (EXISTS "${hook}.py")
+        message(STATUS "Running ${hook}.py.")
+            execute_process(COMMAND "${CTEST_PYTHON_COMMAND}" "${hook}.py" RESULT_VARIABLE hookres)
+        endif()
+    endif()
+    if (NOT (hookres EQUAL 0))
+        message(STATUS "The ${hook} failed.")
+    endif()
+endmacro(run_hook)
+
+set(res 0)

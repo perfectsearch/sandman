@@ -1,0 +1,17 @@
+#!/bin/bash -l
+
+# Figure out the full path to this bash script; we need it so we can
+# tell python where sadm.py is located, no matter what context is active
+# when we call this script. (There are simpler ways to get this info, using
+# basename, dirname, and so forth, but this is the best way if you want to
+# handle potentially multiple levels of soft links and so forth...)
+SCRIPT_PATH="${BASH_SOURCE[0]}";
+if([ -h "${SCRIPT_PATH}" ]) then
+    while([ -h "${SCRIPT_PATH}" ]) do SCRIPT_PATH=`readlink "${SCRIPT_PATH}"`; done
+fi
+pushd . > /dev/null
+cd `dirname ${SCRIPT_PATH}` > /dev/null
+SCRIPT_PATH=`pwd`;
+popd  > /dev/null
+
+python ${SCRIPT_PATH}/loc.py $@

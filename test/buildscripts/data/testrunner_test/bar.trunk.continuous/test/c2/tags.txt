@@ -1,0 +1,3 @@
+// a comment
+assume pushok for: .*\.py except
+officialok 10sec: z.py

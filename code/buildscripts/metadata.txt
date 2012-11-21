@@ -1,0 +1,16 @@
+[component dependencies]
+
+[misc]
+targeted platforms: windows, linux, osx
+no buildupto sandbox:
+
+[build tools]
+python:     2.6,    windows|linux|osx,  python -V,                                                  Download from activestate.com
+nose:       1.1,    windows|linux|osx,  nosetests -V,                                               on Windows run "easy_install nose"
+unittest2:  0.5,    windows|linux|osx,  python -c "import unittest2; print unittest2.__version__",  on Windows run "easy_install unittest2"
+argparse:   1.1,    windows|linux|osx,  python -c "import argparse; print argparse.__version__",    on Windows run "easy_install argparse"
+pep8:       0.5,    windows|linux|osx,  python -c "import pep8; print pep8.__version__",            on windows run "easy_install pep8"
+
+[test tools]
+
+[run tools]

@@ -1,0 +1,118 @@
+include("defs.cmake")
+
+set(CTEST_BUILD_COMMAND "${CTEST_PYTHON_COMMAND} \"${CTEST_SOURCE_DIRECTORY}/buildscripts/make.py\"")
+set(CTEST_TEST_COMMAND "${CTEST_PYTHON_COMMAND} \"${CTEST_SOURCE_DIRECTORY}/buildscripts/testrunner.py\"")
+set(CTEST_BUILD_NAME "rev ${svnrev} on ^[buildenv]")
+
+# Start CTest.
+# We always use the 'Continuous' dashboard, even if our results will end
+# up in a different place in CDash's build groups. This is because we want
+# the behavior that pulls the latest source, rather than the behavior that
+# pulls from a revision pegged to a nightly build time that jumps forward
+# every 24 hours. (On machines that are not canonical, track will always
+# be "Experimental", by design...)
+ctest_start(Continuous TRACK "^[track]")
+if(NOT SHORT_CIRCUIT)
+    #message(STATUS "*** NOT SHORT-CIRCUITING")
+
+    # Get phase
+    set(phase "get")
+    set(skip "build, test${ARCHIVE_PHASE_SUFFIX}")
+    run_hook("pre")
+    if (hookres EQUAL 0)
+        ctest_update( SOURCE "${CTEST_SOURCE_DIRECTORY}" RETURN_VALUE res)
+        # Always run the post hook if the pre hook succeeds (regardless of
+        # whether the core of the phase succeeded), to allow cleanup-style logic.
+        # If the hook should only run when the core succeeds, test for that in
+        # the hook itself.
+        run_hook("post")
+        if ((res EQUAL 0) AND (hookres EQUAL 0))
+
+            # Build phase
+            set(phase "build")
+            set(skip "test${ARCHIVE_PHASE_SUFFIX}")
+            run_hook("pre")
+            if (hookres EQUAL 0)
+                ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" RETURN_VALUE res)
+                run_hook("post")
+                if ((res EQUAL 0) AND (hookres EQUAL 0))
+
+                    # Test phase
+                    set(phase "test")
+                    set(skip ${ARCHIVE_PHASE_SUFFIX})
+                    run_hook("pre")
+                    if (hookres EQUAL 0)
+                        ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" RETURN_VALUE res)
+                        run_hook("post")
+                        if ((res EQUAL 0) AND (hookres EQUAL 0))
+
+                            # Archive phase
+                            if (SHOULD_ARCHIVE EQUAL 1)
+                                set(phase "archive")
+                                set(skip "")
+                                run_hook("pre")
+                                if (hookres EQUAL 0)
+                                    execute_process(COMMAND "${CTEST_PYTHON_COMMAND}" "${CTEST_SOURCE_DIRECTORY}/buildscripts/archive.py"
+                                      RESULT_VARIABLE archiveResult OUTPUT_VARIABLE archiveLog ERROR_VARIABLE archiveLog)
+                                    file(WRITE "${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastArchive.log" "${archiveLog}")
+                                    run_hook("post")
+                                endif()
+                            endif()
+
+                        endif() #test and posttest succeeded
+                    endif() #pretest hook succeeded
+
+                    # If we have a valid svn rev, write the appropriate last-rev file.
+                    if (NOT (${svnrev} STREQUAL "0"))
+                        if (res EQUAL 0)
+                            set(LASTREV_FILE ${LAST_PASS})
+                        else()
+                            if (FAIL_COUNT EQUAL 1)
+                                set(LASTREV_FILE ${LAST_FAIL2})
+                            else()
+                                set(LASTREV_FILE ${LAST_FAIL})
+                            endif()
+                        endif()
+                        #message(STATUS "*** WRITING '${svnrev}' TO ${LASTREV_FILE}")
+                        file(WRITE "${LASTREV_FILE}" "${svnrev}")
+                    endif()
+                endif() #build and postbuild both succeeded
+            endif() #prebuild hook succeeded
+
+        endif() #get and postget both succeeded
+    endif() #preget hook succeeded
+
+    if (NOT "${skip}" STREQUAL "")
+        message(STATUS "Eval failed in the ${phase} phase; skipping ${skip}.")
+    endif()
+
+endif() #not short-circuiting
+
+if(EXISTS "${CTEST_BINARY_DIRECTORY}/../notify.txt")
+    if (res EQUAL 0)
+        set(BUILDRES "succeeded")
+    else()
+        set(BUILDRES "failed")
+    endif()
+    FILE(READ "${CTEST_BINARY_DIRECTORY}/../notify.txt" EMAILINFO)
+    LIST(GET EMAILINFO 0 EMAILS)
+    LIST(LENGTH EMAILINFO LL)
+    if (LL EQUAL 1)
+        EXECUTE_PROCESS(COMMAND "${CTEST_PYTHON_COMMAND}" "${SADM_LOCATION}/buildscripts/mailout.py" "--to" "${EMAILS}" "--sender" "sadm" "--subject" "Official build of ${CTEST_PROJECT_NAME} on ${CTEST_SITE} ${BUILDRES}")
+    else()
+        LIST(GET EMAILINFO 1 USERNAME)
+        LIST(GET EMAILINFO 2 PASSWORD)
+        EXECUTE_PROCESS(COMMAND "${CTEST_PYTHON_COMMAND}" "${SADM_LOCATION}/buildscripts/mailout.py" "--to" "${EMAILS}" "--sender" "sadm" "--subject" "Official build of ${CTEST_PROJECT_NAME} on ${CTEST_SITE} ${BUILDRES}" "--host" "smtp.googlemail.com" "--port" "587" "--username" "${USERNAME}" "--password" "${PASSWORD}")
+    endif()
+    FILE(REMOVE "${CTEST_BINARY_DIRECTORY}/../notify.txt")
+endif()
+
+execute_process(COMMAND "${CTEST_PYTHON_COMMAND}" "${CTEST_SOURCE_DIRECTORY}/buildscripts/check_ant_timeout.py" "${CTEST_BUILD_DIRECTORY}"
+                RESULT_VARIABLE timeoutResult OUTPUT_VARIABLE timeoutResult ERROR_VARIABLE timeoutResult)
+
+if (NOT (timeoutResult EQUAL 0))
+    ctest_submit(PARTS Start RETURN_VALUE res)
+else()
+    ctest_submit(RETURN_VALUE res)
+endif()
+
